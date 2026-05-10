@@ -49,7 +49,6 @@ def extended_DWGM(f_func ,grad_func, hessian_func , ek_func, x0, Hk_gk_func = No
 
         if (gk_norm_inf <= epsilon):
             stop_reason = 1
-            print(f"Convergencia alcanzada tras {k} iteraciones")
             break
 
 
@@ -146,7 +145,7 @@ def cg_scipy(f_func, grad_func, x0, callback, args = None , tol=1e-8, maxiter=10
 
 def run_cg(f_func, grad_func, x0, args = None, tol = 1e-8, maxiter = 10000):
 
-    history = {'iter': [], 'f': [], 'g_norm': []}
+    history = {'iter': [], 'x': [],'f': [], 'g_norm': []}
 
     def my_callback(xk):
         # Calculamos los valores en el punto actual xk
@@ -156,6 +155,7 @@ def run_cg(f_func, grad_func, x0, args = None, tol = 1e-8, maxiter = 10000):
 
         # Guardamos en el historial
         history['iter'].append(len(history['iter']))
+        history['x'].append(xk.copy())
         history['f'].append(f_val)
         history['g_norm'].append(g_norm)
 
