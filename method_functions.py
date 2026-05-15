@@ -15,6 +15,7 @@ def extended_DWGM(f_func ,grad_func, hessian_func , ek_func, x0, Hk_gk_func = No
     hessian_func : función que devuelve la Hessiana de f_func
     ek_func : función que devuelve el valor de ek para cada iteración k
     x0 : punto inicial para la optimización
+    Hk_gk_func : función que devuelve el producto Hk @ gk, si se proporciona se evita el cálculo explícito de la Hessiana (default = None)
     t : parámetro requerido para el algoritmo (default = 1)
     max_iter : número máximo de iteraciones para extended DWGM(default = 10000)
     epsilon : criterio de convergencia para extended DWGM (default = 1e-6)
@@ -22,6 +23,16 @@ def extended_DWGM(f_func ,grad_func, hessian_func , ek_func, x0, Hk_gk_func = No
     gamma : parámetro requerido para el backtracking (default = 1e-4)
     m : número máximo de iteraciones para el backtracking (default = 100)
 
+    Retorna:
+    history : diccionario con la información de cada iteración, incluyendo:
+        - iter: número de iteración
+        - x: punto actual de la iteración
+        - f: valor de la función objetivo en el punto actual
+        - g_norm: norma del gradiente en el punto actual
+        - g_evals: número total de evaluaciones del gradiente realizadas
+        - f_evals: número total de evaluaciones de la función objetivo realizadas
+        - stop_reason: razón de parada (1 si se alcanzó la convergencia, 0 si se alcanzó el número máximo de iteraciones)
+        - convergence_time: tiempo total de convergencia en segundos
     """
     x_k = x0.copy()
     g_k = grad_func(x_k)
@@ -51,7 +62,7 @@ def extended_DWGM(f_func ,grad_func, hessian_func , ek_func, x0, Hk_gk_func = No
             stop_reason = 1
             break
 
-
+        # Si hay una función para calcular Hk @ gk, la usamos para evitar el cálculo explícito de la Hessiana, sino calculamos la Hessiana y luego el producto Hk @ gk
         if Hk_gk_func is not None:
             w_k = Hk_gk_func(grad_func,x_k, g_k)
         
@@ -66,14 +77,13 @@ def extended_DWGM(f_func ,grad_func, hessian_func , ek_func, x0, Hk_gk_func = No
         alpha_k =  gk_T_wk / np.dot(w_k,w_k)
         #Paso 4
         z_k = x_k - t* alpha_k *g_k
-        #Paso 5 -> GRAD(ZK) = G_K - ALPHA*WK
-        #r_k = g_k - alpha_k * w_k
+        #Paso 5 
         r_k = grad_func(z_k)
         history['g_evals'] += 1
         # Backtracking (lineas 6-9 del algoritmo 1.)
         rk_norm = np.linalg.norm(r_k)
-        #for i in range(m):
-        while True: 
+
+        for i in range(m):
             if (rk_norm**2 <= (gk_norm**2 - (gamma*t*alpha_k) * gk_T_wk)):
                 break
             alpha_k = delta * alpha_k
@@ -119,6 +129,7 @@ def cg_scipy(f_func, grad_func, x0, callback, args = None , tol=1e-8, maxiter=10
     - grad_func : función que devuelve el gradiente de f_func
     - x0 : punto inicial para la optimización
     - callback : función que se llama después de cada iteración (default = None)
+    - args : tupla de argumentos adicionales para f_func y grad_func (default = None)
     - tol : criterio de convergencia para el método CG (default = 1e-8)
     - maxiter : número máximo de iteraciones para el método CG (default = 10000)
 
@@ -144,6 +155,25 @@ def cg_scipy(f_func, grad_func, x0, callback, args = None , tol=1e-8, maxiter=10
     return res, convergence_time
 
 def run_cg(f_func, grad_func, x0, args = None, tol = 1e-8, maxiter = 10000):
+
+    """Función para ejecutar el método de Gradiente Conjugado de SciPy y almacenar la información de cada iteración en un diccionario.
+    Recibe:
+    - f_func : función objetivo a minimizar
+    - grad_func : función que devuelve el gradiente de f_func
+    - x0 : punto inicial para la optimización
+    - args : tupla de argumentos adicionales para f_func y grad_func (default = None)
+    - tol : criterio de convergencia para el método CG (default = 1e-8)
+    - maxiter : número máximo de iteraciones para el método CG (default = 10000)
+     Retorna:
+     - history : diccionario con la información de cada iteración, incluyendo: 
+        - iter: número de iteración
+        - x: punto actual de la iteración
+        - f: valor de la función objetivo en el punto actual
+        - g_norm: norma del gradiente en el punto actual
+        - g_evals: número total de evaluaciones del gradiente realizadas
+        - f_evals: número total de evaluaciones de la función objetivo realizadas
+        - stop_reason: razón de parada (1 si se alcanzó la convergencia, 0 si se alcanzó el número máximo de iteraciones)
+        - convergence_time: tiempo total de convergencia en segundos"""
 
     history = {'iter': [], 'x': [],'f': [], 'g_norm': []}
 
@@ -219,6 +249,17 @@ Parametros de la funcion:
     -max_it_GD: Iteraciones máximas para el descenso de gradiente
     -tol_GD: Tolerancia para paro de descenso de gradiente
     -max_it_armijo: Iteraciones maximas para backtracking de Armijo
+
+Retorna:
+    - history : diccionario con la información de cada iteración, incluyendo:
+        - iter: número de iteración
+        - x: punto actual de la iteración
+        - f: valor de la función objetivo en el punto actual
+        - g_norm: norma del gradiente en el punto actual
+        - g_evals: número total de evaluaciones del gradiente realizadas
+        - f_evals: número total de evaluaciones de la función objetivo realizadas
+        - stop_reason: razón de parada (1 si se alcanzó la convergencia, 0 si se alcanzó el número máximo de iteraciones)
+        - convergence_time: tiempo total de convergencia en segundos
 
 """
 #

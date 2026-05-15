@@ -194,30 +194,31 @@ def hessian3_func(x, z, y, sigma):
     """
     m, n = z.shape
     v = (z @ x) * y
-    
-    # h_i / (1 + h_i)^2 es equivalente a sigmoid(-v) * sigmoid(v)
-    # o de forma más simple: p * (1 - p) donde p = 1 / (1 + exp(v))
     p = 1.0 / (1.0 + np.exp(v))
     weights = p * (1.0 - p) # Vector de dimensión m
-    
-    # Forma matricial: sigma * I + Z.T @ diag(weights) @ Z
-    # Esto evita el bucle for sobre m observaciones.
     I = np.eye(n)
-    # np.diag(weights) @ z multiplica cada fila i de z por weights[i]
     hessian = sigma * I + (z.T * weights) @ z
     
     return hessian
 
+
 def get_hessian_vector_product(grad_func, x_k, g_k):
     """
-    Versión simplificada que solo recibe lo necesario en la iteración k.
-    Implementa el h dinámico de la página 9[cite: 1726, 1727].
+    Función que calcula el producto de la Hessiana por el gradiente usando diferencias finitas.
+Recibe:
+- grad_func : función que devuelve el gradiente de f_func
+- x_k : punto actual de la iteración k
+- g_k : gradiente de f_func en el punto x_k
+Retorna:
+- wk : producto de la Hessiana por el gradiente en el punto x_k
     """
+
     gk_norm = np.linalg.norm(g_k)
-    h = 1e-5 / min(1.0, max(1e-3, 1e5 * gk_norm)) # [cite: 1726, 1727]
-    
-    # grad_func ya debe venir con z, y, sigma pre-configurados
+    #Los autores definen h de esta manera para evitar problemas numéricos cuando gk_norm es muy pequeño o muy grande
+    h = 1e-5 / min(1.0, max(1e-3, 1e5 * gk_norm)) 
+    # g(x_k+h*g_k)
     g_plus = grad_func(x_k + h * g_k) 
-    wk = (g_plus - g_k) / h # [cite: 1722]
+    # Hk * gk ≈ (g(x_k+h*g_k) - g(x_k)) / h
+    wk = (g_plus - g_k) / h 
     
     return wk

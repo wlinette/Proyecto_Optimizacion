@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ucimlrepo import fetch_ucirepo 
 import pandas as pd
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
 
 def plot_convergence(histories,method_names, path = None):
     """ Función para graficar la convergencia de los métodos. Recibe:
@@ -27,11 +29,22 @@ def plot_convergence(histories,method_names, path = None):
 
     plt.pause(8)
     plt.close()
-    
 
+
+def sigmoid(z):
+    #limitar los valores de z para evitar errores de overflow
+    z = np.clip(z, -250, 250)
+    return 1.0 / (1.0 + np.exp(-z))
+
+def predict(Z, X):
+    #obtención de la probabilidad
+    predictions = sigmoid(Z @ X)
+    #clasificación binaria con umbral 0.5
+    predictions = np.where(predictions >= 0.5, 1, -1)
+    return predictions
+
+# Configurar para mostrar todas las columnas y filas de los dataframes sin truncar
 pd.set_option('display.max_rows', None)
-
-# Configurar para mostrar todas las columnas
 pd.set_option('display.max_columns', None)
 
 # :::::::::::::::::: EXPERIMENTO 1 DEL PAPER :::::::::::::::::
@@ -43,11 +56,11 @@ saving_path = 'experiments/exp1.png'
 print(r"Experimento 1 : $f_1(x) = \sum _{i=1} ^n \frac{i}{10} (e^{x_i} - x_i)$")
 
 """EXTENDED DWGM """
-history_extDWGM= meth_f.extended_DWGM(loss_f.f_func ,loss_f.grad_func, loss_f.hessian_func , loss_f.ek_func , x0, t = 1 ,max_iter = 10000, epsilon = epsilon,delta = 0.9 ,gamma = 1e-4, m = 100)
+history_extDWGM= meth_f.extended_DWGM(loss_f.f_func ,loss_f.grad_func, loss_f.hessian_func , loss_f.ek_func , x0, t = 1 ,max_iter = 300, epsilon = epsilon,delta = 0.9 ,gamma = 1e-4, m = 100)
 
 
 """GRADIENTE CONJUGADO DE SCIPY"""
-history_CG = meth_f.run_cg(loss_f.f_func, loss_f.grad_func, x0, tol=epsilon, maxiter=10000)
+history_CG = meth_f.run_cg(loss_f.f_func, loss_f.grad_func, x0, tol=epsilon, maxiter=300)
 
 
 """ GRADIENTE DESCENDENTE CON BACKTRACKING """
@@ -81,11 +94,11 @@ saving_path = 'experiments/exp2.png'
 print(r"Experimento 2 : $f_1(x) = \sum _{i=1} ^n \frac{i}{10} (e^{x_i} - x_i)$")
 
 """EXTENDED DWGM """
-history_extDWGM= meth_f.extended_DWGM(loss_f.f_func ,loss_f.grad_func, loss_f.hessian_func , loss_f.ek_func , x0, t = 1 ,max_iter = 10000, epsilon = epsilon,delta = 0.9 ,gamma = 1e-4, m = 100)
+history_extDWGM= meth_f.extended_DWGM(loss_f.f_func ,loss_f.grad_func, loss_f.hessian_func , loss_f.ek_func , x0, t = 1 ,max_iter = 300, epsilon = epsilon,delta = 0.9 ,gamma = 1e-4, m = 100)
 
 
 """GRADIENTE CONJUGADO DE SCIPY"""
-history_CG = meth_f.run_cg(loss_f.f_func, loss_f.grad_func, x0, tol=epsilon, maxiter=10000)
+history_CG = meth_f.run_cg(loss_f.f_func, loss_f.grad_func, x0, tol=epsilon, maxiter=300)
 
 
 """ GRADIENTE DESCENDENTE CON BACKTRACKING """
@@ -118,11 +131,11 @@ saving_path = 'experiments/exp3.png'
 print(r"Experimento 3 : $ f_2(x) - log (\lambda^2 - x^T x)$")
 
 """EXTENDED DWGM """
-history_extDWGM= meth_f.extended_DWGM(loss_f.f2_func ,loss_f.grad2_func, loss_f.hessian2_func , loss_f.ek_func , x0, t = 1 ,max_iter = 10000, epsilon = epsilon,delta = 0.9 ,gamma = 1e-4, m = 100)
+history_extDWGM= meth_f.extended_DWGM(loss_f.f2_func ,loss_f.grad2_func, loss_f.hessian2_func , loss_f.ek_func , x0, t = 1 ,max_iter = 300, epsilon = epsilon,delta = 0.9 ,gamma = 1e-4, m = 100)
 
 
 """GRADIENTE CONJUGADO DE SCIPY"""
-history_CG = meth_f.run_cg(loss_f.f2_func, loss_f.grad2_func, x0, tol=epsilon, maxiter=10000)
+history_CG = meth_f.run_cg(loss_f.f2_func, loss_f.grad2_func, x0, tol=epsilon, maxiter=300)
 
 
 """ GRADIENTE DESCENDENTE CON BACKTRACKING """
@@ -166,12 +179,12 @@ sigma = 0.0 # parametro requerido para la funcion f3
 saving_path = 'experiments/exp4.png'
 print(r"Experimento 4 : $ f_3(x)= \frac{\sigma}{2} || x|| ^2 + \sum log (1 + e^{-(x^Tz^i)y^i})$")
 
-history_extDWGM = meth_f.extended_DWGM(lambda x: loss_f.f3_func(x, Z, y,sigma), lambda x: loss_f.grad3_func(x, Z, y, sigma), lambda x: loss_f.hessian3_func(x, Z, y, sigma), loss_f.ek_func, x0,lambda grad3_func,x, gk: loss_f.get_hessian_vector_product(grad3_func, x, gk), t = 1, max_iter = 10000, epsilon = epsilon, delta = 0.9, gamma = 1e-4, m = 100)
+history_extDWGM = meth_f.extended_DWGM(lambda x: loss_f.f3_func(x, Z, y,sigma), lambda x: loss_f.grad3_func(x, Z, y, sigma), lambda x: loss_f.hessian3_func(x, Z, y, sigma), loss_f.ek_func, x0,lambda grad3_func,x, gk: loss_f.get_hessian_vector_product(grad3_func, x, gk), t = 1, max_iter = 300, epsilon = epsilon, delta = 0.9, gamma = 1e-4, m = 100)
 
 
 
 """GRADIENTE CONJUGADO DE SCIPY"""
-history_CG = meth_f.run_cg(lambda x: loss_f.f3_func(x, Z, y,sigma), lambda x: loss_f.grad3_func(x, Z, y, sigma), x0, tol=epsilon, maxiter=10000)
+history_CG = meth_f.run_cg(lambda x: loss_f.f3_func(x, Z, y,sigma), lambda x: loss_f.grad3_func(x, Z, y, sigma), x0, tol=epsilon, maxiter=300)
 
 
 """ GRADIENTE DESCENDENTE CON BACKTRACKING """
@@ -194,3 +207,36 @@ df_summary = pd.DataFrame(resume_dic)
 print(df_summary)
 print('\n')
 plot_convergence([history_extDWGM, history_CG, history_GD, history_TR], ['DWGM modificado', 'Gradiente Conjugado', 'Gradiente Descendente con Backtracking', 'Región de Confianza'], path=saving_path)
+
+
+
+# :::::::::::::::::::::::: EXPERIMENTO 5 : CLASIFICADOR LOGÍSTICO CON REGULARIZACIÓN L2 :::::::::::::::::::::::::
+
+# División del conjunto de datos (Train / Test Split), (20% para prueba) y stratify=y para balancear las clases
+Z_train, Z_test, y_train, y_test = train_test_split(
+    Z, y, test_size=0.2, random_state=2, stratify=y
+)
+
+n = Z_train.shape[1]  # Número de características
+x0 = np.array([1.0]*n, dtype=np.float64)
+
+history_extDWGM = meth_f.extended_DWGM(lambda x: loss_f.f3_func(x, Z_train, y_train,sigma), lambda x: loss_f.grad3_func(x, Z_train, y_train, sigma), lambda x: loss_f.hessian3_func(x, Z_train, y_train, sigma), loss_f.ek_func, x0,lambda grad3_func,x, gk: loss_f.get_hessian_vector_product(grad3_func, x, gk), t = 1, max_iter = 300, epsilon = epsilon, delta = 0.9, gamma = 1e-4, m = 100)
+history_GD = meth_f.desc_grad_armijo(lambda x: loss_f.f3_func(x, Z_train, y_train, sigma), lambda x: loss_f.grad3_func(x, Z_train, y_train, sigma), x0, alpha_0=1.0, rho=0.5, c1=1e-4, max_it_GD=300, tol_GD=epsilon, max_it_Armijo=100)
+
+
+# Hacemos predicciones con los pesos obtenidos por cada método
+y_pred_extDWGM = predict(Z_test, history_extDWGM['x'][-1])
+y_pred_GD = predict(Z_test, history_GD['x'][-1])
+
+# Evaluamos
+test_accuracy_extDWGM = accuracy_score(y_test, y_pred_extDWGM)
+train_accuracy_extDWGM = accuracy_score(y_train, predict(Z_train, history_extDWGM['x'][-1]))
+test_accuracy_GD = accuracy_score(y_test, y_pred_GD)
+train_accuracy_GD = accuracy_score(y_train, predict(Z_train, history_GD['x'][-1]))
+
+print("Resultados del Experimento 5: Clasificador Logístico con Regularización L2")
+print(f"Train accuracy with Extended DWGM: {train_accuracy_extDWGM * 100:.2f}%")
+print(f"Train accuracy with Gradient Descent: {train_accuracy_GD * 100:.2f}%")
+print(f"Test accuracy with Extended DWGM: {test_accuracy_extDWGM * 100:.2f}%")
+print(f"Test accuracy with Gradient Descent: {test_accuracy_GD * 100:.2f}%")
+
